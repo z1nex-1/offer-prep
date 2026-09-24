@@ -137,6 +137,16 @@ kbd {
   font-size: 0.9em;
 }
 
+/* JetBrains Mono рисует != и <= как ≠ и ≤ — в учебном коде это выглядит как другой синтаксис */
+code,
+pre,
+kbd,
+textarea,
+.cm-editor {
+  font-variant-ligatures: none;
+  font-feature-settings: 'calt' 0, 'liga' 0;
+}
+
 .container {
   max-width: 1180px;
   margin: 0 auto;
