@@ -86,6 +86,10 @@ for md in sorted(DIR.glob('*.md')):
     (PUBLIC / f'{pid}.json').write_text(json.dumps(tests, ensure_ascii=False, separators=(',', ':')))
     size = sum(len(t['in']) + len(t['out']) for t in tests)
     print(f'{pid}: {len(tests)} тестов, {size // 1024} КБ, эталон до {worst:.2f} с')
+    # Тесты грузятся в браузер при каждой отправке: больше мегабайта — долго и без пользы.
+    if size > 1024 * 1024:
+        print('СЛИШКОМ БОЛЬШИЕ ТЕСТЫ', pid)
+        fails += 1
 
 out_path.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')))
 print('задач:', len(result), 'ошибок:', fails)
