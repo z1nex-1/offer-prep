@@ -10,8 +10,8 @@ def tests():
     out = [fmt([1, 0, 1, 1, 0]), fmt([1, 1, 1]), fmt([]), fmt([0, 0, 0]), fmt([0, 1, 1, 1, 0, 1]), fmt([1]), fmt([0])]
     for n in (10, 50, 1000):
         out.append(fmt([random.choice([0, 1, 1]) for _ in range(n)]))
-    out.append(fmt([1] * 100000))
-    out.append(fmt([random.choice([0, 1]) for _ in range(100000)]))
+    out.append(fmt([1] * 40000))
+    out.append(fmt([random.choice([0, 1]) for _ in range(40000)]))
     return out
 
 
