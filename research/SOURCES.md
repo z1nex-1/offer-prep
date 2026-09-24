@@ -35,6 +35,8 @@
 - Реальные задачи с собеседований Яндекса, VK, Ozon, Сбера, WB, Авито — https://habr.com/ru/articles/995600/
 - Собеседование стажёра-аналитика в Яндекс — https://habr.com/ru/articles/546004/
 - Как попасть на стажировку аналитиком в Яндекс — https://habr.com/ru/companies/yandex_praktikum/articles/861304/
+- Яндекс: как проходят алгоритмические секции, шесть задач с собеседований (камни и украшения, серия единиц, удаление дубликатов, скобочные последовательности, анаграммы, слияние k списков), 2019 — https://habr.com/ru/companies/yandex/articles/449890/
+- Опыт кандидата: четыре алгоритмических интервью в Яндекс, задачи «свернуть в диапазоны» и «серия единиц после удаления одного элемента», 2021 — https://habr.com/ru/articles/550088/
 - Отбор на бизнес-стажировку Ozon — https://habr.com/ru/articles/916488/
 - Proglib: 20 стажировок для IT-студентов 2026 — https://proglib.io/p/kuda-podatsya-studentu-aytishniku-20-aktualnyh-programm-stazhirovok-v-2026-godu-2026-06-26
 
