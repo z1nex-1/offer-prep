@@ -74,7 +74,8 @@ for md in sorted(DIR.glob('*.md')):
         worst = max(worst, dt)
         if hasattr(g, 'brute') and len(inp) < 3000:
             want = g.brute(inp)
-            if norm(str(want)).split() != norm(out).split():
+            # None — перебор не берётся за этот тест (слишком большой).
+            if want is not None and norm(str(want)).split() != norm(out).split():
                 print(f'НЕ СОВПАЛО С ПЕРЕБОРОМ {pid} тест {i + 1}:\n{inp[:300]}\nэталон: {norm(out)[:200]}\nперебор: {norm(str(want))[:200]}')
                 fails += 1
         tests.append({'in': inp, 'out': norm(out) + '\n'})
