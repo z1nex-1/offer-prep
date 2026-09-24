@@ -9,6 +9,12 @@ interface Req {
   mode: string
 }
 
+interface ProgramReq {
+  program: true
+  code: string
+  inputs: string[]
+}
+
 interface Pyodide {
   runPython: (code: string) => unknown
   globals: { set: (k: string, v: unknown) => void; get: (k: string) => unknown }
@@ -51,7 +57,63 @@ def __run_tests(src, fn, tests_json):
     return json.dumps(out)
 `
 
-self.onmessage = async (e: MessageEvent<Req | { warm: true }>) => {
+// Программа целиком, как в Яндекс Контесте: stdin -> stdout. У sys.stdin и sys.stdout есть .buffer,
+// а потоки выполняются синхронно — в браузере их нет, а решения с threading для глубокой рекурсии встречаются часто.
+const PROGRAM = `
+import sys, io, time, traceback, threading
+threading.Thread.start = lambda self: self.run()
+threading.Thread.join = lambda self, *a, **k: None
+threading.stack_size = lambda *a: 0
+def __run_program(src, inp):
+    raw_out = io.BytesIO()
+    out = io.TextIOWrapper(raw_out, encoding="utf-8", write_through=True)
+    stdin = io.TextIOWrapper(io.BytesIO(inp.encode("utf-8")), encoding="utf-8")
+    old_in, old_out = sys.stdin, sys.stdout
+    sys.stdin, sys.stdout = stdin, out
+    err = None
+    t0 = time.perf_counter()
+    try:
+        exec(compile(src, "solution.py", "exec"), {"__name__": "__main__"})
+    except SystemExit as e:
+        if e.code not in (None, 0):
+            err = "Программа завершилась с кодом " + str(e.code)
+    except BaseException:
+        lines = traceback.format_exc().strip().splitlines()
+        keep = [l for l in lines if "solution.py" in l or not l.startswith("  File")]
+        err = "\\n".join(keep[-4:])
+    finally:
+        try:
+            out.flush()
+        except Exception:
+            pass
+        sys.stdin, sys.stdout = old_in, old_out
+    ms = (time.perf_counter() - t0) * 1000
+    return [raw_out.getvalue().decode("utf-8", "replace"), err, ms]
+`
+
+async function runProgram(req: ProgramReq) {
+  try {
+    const p = await boot()
+    p.runPython(PROGRAM)
+    p.globals.set('__src', req.code)
+    for (let i = 0; i < req.inputs.length; i++) {
+      p.globals.set('__inp', req.inputs[i])
+      const res = p.runPython('__run_program(__src, __inp)') as { toJs: () => [string, string | null, number]; destroy: () => void }
+      const [out, err, ms] = res.toJs()
+      res.destroy()
+      self.postMessage({ progress: i, out: out.length > 200000 ? out.slice(0, 200000) : out, err, ms })
+    }
+    self.postMessage({ done: true })
+  } catch (err) {
+    self.postMessage({ done: true, fatal: String(err).split('\n').filter(Boolean).slice(-3).join('\n') })
+  }
+}
+
+self.onmessage = async (e: MessageEvent<Req | ProgramReq | { warm: true }>) => {
+  if ('program' in e.data) {
+    await runProgram(e.data)
+    return
+  }
   if ('warm' in e.data) {
     try {
       await boot()

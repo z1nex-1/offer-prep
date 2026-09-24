@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { CodeEditor } from '../components/CodeEditor'
-import { Crumbs, DiffChip, Md } from '../components/ui'
+import { Crumbs, DiffChip, Md, fmtTime, useCountdown } from '../components/ui'
 import { companyById } from '../data/companies'
 import { problems } from '../data/problems'
 import { runCode, warmPython, type RunResult } from '../lib/runner'
@@ -17,6 +17,10 @@ function starter(p: Problem, lang: Lang) {
 
 export default function ProblemPage() {
   const { id = '' } = useParams()
+  const [sp] = useSearchParams()
+  const interview = sp.get('mode') === 'interview'
+  const [checked, setChecked] = useState(false)
+  const timer = useCountdown(25 * 60)
   const idx = problems.findIndex((p) => p.id === id)
   const p = problems[idx]
   const [lang, setLang] = useState<Lang>(() => {
@@ -37,10 +41,15 @@ export default function ProblemPage() {
 
   useEffect(() => {
     if (!p) return
-    setCode(saved ?? starter(p, lang))
+    setCode(interview ? starter(p, lang) : saved ?? starter(p, lang))
     setResult(null)
+    setChecked(false)
+    if (interview) {
+      setTab('task')
+      timer.start()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, lang])
+  }, [id, lang, interview])
 
   useEffect(() => {
     try {
@@ -67,6 +76,10 @@ export default function ProblemPage() {
     const r = await runCode(lang, code, p)
     setRunning(false)
     setResult(r)
+    if (interview) {
+      setChecked(true)
+      timer.stop()
+    }
     if (r.ok && r.results.length && r.results.every((x) => x.pass)) {
       update((s) => ({ ...s, problems: { ...s.problems, [p.id]: { at: Date.now(), lang } } }))
     }
@@ -77,7 +90,15 @@ export default function ProblemPage() {
 
   return (
     <div className="container">
-      <Crumbs items={[{ to: '/problems', label: 'Алгоритмы' }, { label: p.pattern }]} />
+      <Crumbs items={interview ? [{ to: '/iwo/interview', label: 'Тренажёр секции' }, { label: 'Режим собеседования' }] : [{ to: '/problems', label: 'Алгоритмы' }, { label: p.pattern }]} />
+      {interview && !checked && (
+        <div className="notice warm mb row between">
+          <span>
+            <b>Режим собеседования.</b> Уточните условие, придумайте примеры, озвучьте идею и сложность, напишите код и проверьте его в уме. Запуск — один раз, когда будете уверены.
+          </span>
+          <b className="timer" style={{ color: timer.left < 0 ? 'var(--bad)' : undefined }}>{fmtTime(timer.left)}</b>
+        </div>
+      )}
       <div className="split">
         <div className="card">
           <div className="row between">
@@ -89,7 +110,7 @@ export default function ProblemPage() {
             <span className="chip">{p.pattern}</span>
             {p.companies?.map((c) => companyById[c] && <span key={c} className="chip">{companyById[c].name}</span>)}
           </div>
-          <div className="tabs mt">
+          <div className="tabs mt" style={interview && !checked ? { display: 'none' } : undefined}>
             <button className={tab === 'task' ? 'on' : ''} onClick={() => setTab('task')}>
               Условие
             </button>
@@ -145,8 +166,8 @@ export default function ProblemPage() {
                 <button className="btn sm ghost" onClick={() => onChange(starter(p, lang))} title="Вернуть заготовку">
                   Сброс
                 </button>
-                <button className="btn sm primary" onClick={run} disabled={running}>
-                  {running ? 'Проверяем…' : 'Запустить тесты'}
+                <button className="btn sm primary" onClick={run} disabled={running || (interview && checked)}>
+                  {running ? 'Проверяем…' : interview ? (checked ? 'Проверено' : 'Готово — проверить') : 'Запустить тесты'}
                 </button>
               </div>
             </div>
@@ -155,6 +176,7 @@ export default function ProblemPage() {
           <div className="tiny faint mt-s">
             <span className="kbd">Ctrl</span> + <span className="kbd">Enter</span> — запустить. Код сохраняется автоматически.
           </div>
+          {interview && checked && <InterviewRubric passed={!!result?.ok && result.results.every((x) => x.pass)} left={timer.left} />}
           {result && (
             <div className="results">
               {!result.ok && <div className="result fail">{result.error}</div>}
@@ -223,6 +245,37 @@ function Solution({ p, solved }: { p: Problem; solved: boolean }) {
         </button>
       </div>
       <Md text={'```\n' + (lang === 'py' ? p.solution.py : p.solution.js) + '\n```'} />
+    </div>
+  )
+}
+
+const RUBRIC = [
+  'Задал уточняющие вопросы и проговорил ограничения',
+  'Привёл примеры и краевые случаи до кода',
+  'Назвал сложность по времени и памяти до кода',
+  'Код без дублирования и лишних частных случаев',
+  'Проверил код вручную на примере до запуска',
+  'Уложился в 25 минут',
+]
+
+function InterviewRubric({ passed, left }: { passed: boolean; left: number }) {
+  const [marks, setMarks] = useState<Record<number, boolean>>({ 5: left >= 0 })
+  const score = RUBRIC.filter((_, i) => marks[i]).length + (passed ? 2 : 0)
+  return (
+    <div className="card mt">
+      <b>Самооценка, как на секции</b>
+      <div className="small muted mb">
+        {passed ? 'Тесты пройдены с первого запуска — на секции это и есть «рабочее решение».' : 'С первого раза тесты не прошли. На секции интервьюер показал бы контрпример — найдите ошибку сами, это тоже засчитывается.'}
+      </div>
+      {RUBRIC.map((r, i) => (
+        <label key={i} className="row small" style={{ gap: 8, cursor: 'pointer' }}>
+          <input type="checkbox" checked={!!marks[i]} onChange={(e) => setMarks({ ...marks, [i]: e.target.checked })} />
+          {r}
+        </label>
+      ))}
+      <div className="mt-s">
+        <b>{score} из 8.</b> <span className="small muted">{score >= 7 ? 'Уровень «можно звать дальше».' : score >= 5 ? 'Близко: подтяните пункты без галочки.' : 'Пока слабее нужного — повторите алгоритм действий из урока о секции.'}</span>
+      </div>
     </div>
   )
 }

@@ -87,6 +87,7 @@ export function Layout() {
             оффер
           </Link>
           <nav className="nav">
+            <NavLink to="/iwo">Курс IWO</NavLink>
             <NavLink to="/companies">Компании</NavLink>
             <NavLink to="/tracks">Направления</NavLink>
             <TrainMenu />
@@ -105,6 +106,7 @@ export function Layout() {
           </div>
         </div>
         <div className={mobile ? 'mobile-nav open' : 'mobile-nav'}>
+          <Link to="/iwo">Курс Intern week offer</Link>
           <Link to="/plan">Мой план</Link>
           <Link to="/companies">Компании</Link>
           <Link to="/tracks">Направления</Link>

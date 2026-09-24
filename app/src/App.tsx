@@ -22,6 +22,16 @@ const Calendar = lazy(() => import('./pages/Calendar'))
 const Behavioral = lazy(() => import('./pages/Behavioral'))
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
 const About = lazy(() => import('./pages/About'))
+const IwoHub = lazy(() => import('./pages/iwo/Hub'))
+const IwoDiagnostic = lazy(() => import('./pages/iwo/Diagnostic'))
+const IwoPlan = lazy(() => import('./pages/iwo/PlanPage'))
+const IwoModule = lazy(() => import('./pages/iwo/ModulePage'))
+const IwoLesson = lazy(() => import('./pages/iwo/LessonPage'))
+const IwoContest = lazy(() => import('./pages/iwo/ContestList'))
+const IwoContestProblem = lazy(() => import('./pages/iwo/ContestProblemPage'))
+const IwoYandex = lazy(() => import('./pages/iwo/YandexBank'))
+const IwoInterview = lazy(() => import('./pages/iwo/Interview'))
+const IwoReview = lazy(() => import('./pages/iwo/Review'))
 
 export default function App() {
   return (
@@ -51,6 +61,16 @@ export default function App() {
             <Route path="behavioral" element={<Behavioral />} />
             <Route path="progress" element={<ProgressPage />} />
             <Route path="about" element={<About />} />
+            <Route path="iwo" element={<IwoHub />} />
+            <Route path="iwo/diagnostic" element={<IwoDiagnostic />} />
+            <Route path="iwo/plan" element={<IwoPlan />} />
+            <Route path="iwo/m/:id" element={<IwoModule />} />
+            <Route path="iwo/l/:id" element={<IwoLesson />} />
+            <Route path="iwo/contest" element={<IwoContest />} />
+            <Route path="iwo/contest/:id" element={<IwoContestProblem />} />
+            <Route path="iwo/yandex" element={<IwoYandex />} />
+            <Route path="iwo/interview" element={<IwoInterview />} />
+            <Route path="iwo/review" element={<IwoReview />} />
             <Route path="*" element={<div className="container empty">Страница не найдена.</div>} />
           </Route>
         </Routes>

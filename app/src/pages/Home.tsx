@@ -30,6 +30,13 @@ export function Home() {
 
   return (
     <div className="container">
+      <Link to="/iwo" className="card card-link row between" style={{ marginTop: 24, borderColor: 'var(--accent)' }}>
+        <div>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Новое · Яндекс Intern week offer, бэкенд на Python</div>
+          <b style={{ fontSize: 18 }}>Курс с нуля до оффера: диагностика уровня, теория, план по дням до контеста 18 октября и секций 26–30 октября</b>
+        </div>
+        <span className="btn primary">Открыть курс</span>
+      </Link>
       <section className="hero hero-grid">
         <div>
         <div className="eyebrow">Стажировки и первые офферы в IT</div>

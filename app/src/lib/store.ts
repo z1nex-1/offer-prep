@@ -42,7 +42,22 @@ export interface State {
   checklist: Record<string, boolean>
   code: Record<string, string>
   notes: Record<string, string>
+  iwo: IwoState
 }
+
+export interface IwoState {
+  diag?: { at: number; answers: Record<string, number> }
+  lessons: Record<string, number>
+  checks: Record<string, { at: number; score: number; total: number }>
+  contest: Record<string, number>
+  coderun: Record<string, number>
+  settings?: { contestDate: string; hours: number; start: string; startLevel?: 'auto' | 'zero' }
+  done: Record<string, number>
+  virtual?: { start: number; minutes: number; ids: string[] }
+  virtualHistory: { at: number; solved: number; total: number; minutes: number }[]
+}
+
+export const emptyIwo = (): IwoState => ({ lessons: {}, checks: {}, contest: {}, coderun: {}, done: {}, virtualHistory: [] })
 
 const KEY = 'offer.state.v1'
 
@@ -60,13 +75,15 @@ const empty = (): State => ({
   checklist: {},
   code: {},
   notes: {},
+  iwo: emptyIwo(),
 })
 
 function load(): State {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return empty()
-    return { ...empty(), ...JSON.parse(raw) }
+    const parsed = JSON.parse(raw)
+    return { ...empty(), ...parsed, iwo: { ...emptyIwo(), ...parsed.iwo } }
   } catch {
     return empty()
   }
@@ -118,7 +135,7 @@ export function exportState(): string {
 export function importState(json: string) {
   const parsed = JSON.parse(json)
   if (!parsed || parsed.v !== 1) throw new Error('Неизвестный формат файла')
-  update(() => ({ ...empty(), ...parsed }))
+  update(() => ({ ...empty(), ...parsed, iwo: { ...emptyIwo(), ...parsed.iwo } }))
 }
 
 export function resetState() {
@@ -158,5 +175,19 @@ export function togglePlanItem(id: string) {
     if (planDone[id]) delete planDone[id]
     else planDone[id] = Date.now()
     return { ...s, planDone }
+  })
+}
+
+export function updateIwo(fn: (s: IwoState) => IwoState) {
+  update((s) => ({ ...s, iwo: fn(s.iwo) }))
+}
+
+export function toggleIn(key: 'lessons' | 'contest' | 'coderun' | 'done', id: string, on?: boolean) {
+  updateIwo((s) => {
+    const next = { ...s[key] }
+    const want = on ?? !next[id]
+    if (want) next[id] = next[id] || Date.now()
+    else delete next[id]
+    return { ...s, [key]: next }
   })
 }
