@@ -158,7 +158,7 @@ export default function ModulePage() {
         <section className="section">
           <h2>Задачи Яндекса на CodeRun</h2>
           <p className="small muted">
-            Задачи с отборов, тренировок и собеседований Яндекса по тегам {m.coderunTags.join(', ')}. Сначала — из официальных подборок для собеседований и стажировок. Решайте на CodeRun (нужен Яндекс ID), здесь отмечайте галочкой.
+            Задачи с отборов, тренировок и собеседований Яндекса{m.coderunTags.length > 0 && ` по тегам ${m.coderunTags.join(', ')}`}. Сначала — из официальных подборок для собеседований и стажировок. Решайте на CodeRun (нужен Яндекс ID), здесь отмечайте галочкой.
           </p>
           <CodeRunList moduleId={m.id} />
         </section>
