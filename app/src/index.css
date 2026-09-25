@@ -791,6 +791,9 @@ tr:last-child td {
   border: 0;
   padding: 0;
 }
+.md :not(pre) > code {
+  overflow-wrap: anywhere;
+}
 .md table {
   margin: 0 0 1em;
   border: 1px solid var(--border);
