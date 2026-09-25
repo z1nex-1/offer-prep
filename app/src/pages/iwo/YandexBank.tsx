@@ -2,12 +2,14 @@ import { useMemo, useState } from 'react'
 import { Crumbs, Check, plural } from '../../components/ui'
 import { SELECTIONS, coderun, coderunLevel, coderunUrl } from '../../course/content'
 import { modules } from '../../course/modules'
+import { trackOf } from '../../course/tracks'
 import { toggleIn, useStore } from '../../lib/store'
 
 const LEVEL = { 1: 'Разминка', 2: 'Уровень контеста', 3: 'Сложные' }
 
 export default function YandexBank() {
   const done = useStore((s) => s.iwo.coderun)
+  const track = useStore((s) => trackOf(s.iwo))
   const [mod, setMod] = useState('')
   const [sel, setSel] = useState('')
   const [lvl, setLvl] = useState(0)
@@ -38,7 +40,10 @@ export default function YandexBank() {
         {plural(coderun.length, 'задача', 'задачи', 'задач')} с CodeRun — тренажёра Яндекса, где собраны задачи прошлых отборов, тренировок по алгоритмам и собеседований. Все решаются на Python. Отмечено решённых: {doneN}.
       </p>
       <div className="notice mb">
-        Как пользоваться: решайте задачу на CodeRun до вердикта OK, затем ставьте галочку здесь — прогресс попадёт в план. Для репетиции контеста лучше всего подходят подборка «Бэкенд, сезон CodeRun» (задачи трека бэкенда) и «Стажировка // Бэкенд» от интервьюеров Яндекса.
+        Как пользоваться: решайте задачу на CodeRun до вердикта OK, затем ставьте галочку здесь — прогресс попадёт в план.{' '}
+        {track === 'ml'
+          ? 'Здесь алгоритмические задачи — вторая половина контеста ML и алгоритмическое интервью. Для ML-половины решайте задачи тренажёра из модулей «Метрики и валидация», «Классические модели», «ML в коде» и «Нейросети» и тренировочный контест, который советует Яндекс.'
+          : 'Для репетиции контеста лучше всего подходят подборка «Бэкенд, сезон CodeRun» (задачи трека бэкенда) и «Стажировка // Бэкенд» от интервьюеров Яндекса.'}
       </div>
 
       <div className="grid grid-3 mb">

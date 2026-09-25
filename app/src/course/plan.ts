@@ -115,6 +115,29 @@ function moduleTasks(moduleId: string, mastery: Mastery, used: Set<string>, answ
   return out
 }
 
+// Старт и регистрация остаются первыми, дальше ML-задачи и остальные чередуются так, чтобы время делилось поровну.
+function interleaveMl(queue: Task[]): Task[] {
+  const isMl = (t: Task) => !!t.module && modules.find((m) => m.id === t.module)?.part === 'ml'
+  const head = queue.filter((t) => !t.module || t.module === 'start')
+  const ml = queue.filter(isMl)
+  const rest = queue.filter((t) => !head.includes(t) && !isMl(t))
+  const out = [...head]
+  let a = 0
+  let b = 0
+  let i = 0
+  let j = 0
+  while (i < ml.length || j < rest.length) {
+    if (j >= rest.length || (i < ml.length && a <= b)) {
+      a += ml[i].minutes
+      out.push(ml[i++])
+    } else {
+      b += rest[j].minutes
+      out.push(rest[j++])
+    }
+  }
+  return out
+}
+
 export function buildCoursePlan(s: State, today: string): CoursePlan | null {
   const st = s.iwo.settings
   if (!st) return null
@@ -176,6 +199,8 @@ export function buildCoursePlan(s: State, today: string): CoursePlan | null {
     if (m.stage === 'interview') interviewQueue.push(...tasks)
     else learnQueue.push(...tasks)
   }
+  // Контест ML наполовину из задач по ML: иначе Python и алгоритмы займут все дни до него, и до моделей очередь не дойдёт.
+  if (track === 'ml') learnQueue.splice(0, learnQueue.length, ...interleaveMl(learnQueue))
   // Устная часть по алгоритмическим модулям идёт в фазу собеседований.
   interviewQueue.unshift(
     ...ms

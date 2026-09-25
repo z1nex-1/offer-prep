@@ -6,6 +6,7 @@ import { modules } from '../../course/modules'
 import { problems } from '../../data/problems'
 import { rateCard, useStore } from '../../lib/store'
 import { trackOf } from '../../course/tracks'
+import type { Track } from '../../course/types'
 
 const STEPS = [
   ['Уточнить условие', 'Переспросить формат входа и выхода, ограничения, что делать с пустыми данными и дубликатами. Интервьюер оценивает, как вы задаёте вопросы.'],
@@ -108,26 +109,35 @@ export default function Interview() {
           <a href="https://coderun.yandex.ru/selections/yandex-interview" target="_blank" rel="noreferrer">
             «Подготовка к собеседованию в Яндекс»
           </a>{' '}
-          и{' '}
-          <a href="https://coderun.yandex.ru/selections/backend-interview" target="_blank" rel="noreferrer">
-            «Стажировка // Бэкенд»
-          </a>{' '}
+          {track === 'backend' && (
+            <>
+              и{' '}
+              <a href="https://coderun.yandex.ru/selections/backend-interview" target="_blank" rel="noreferrer">
+                «Стажировка // Бэкенд»
+              </a>
+            </>
+          )}{' '}
           на CodeRun.
         </p>
       </section>
 
-      <TheoryDrill />
+      <TheoryDrill track={track} />
     </div>
   )
 }
 
-function TheoryDrill() {
+const DRILL: Record<Track, { modules: string[]; about: string }> = {
+  backend: { modules: ['py-deep', 'backend', 'complexity', 'py-collections', 'hashing', 'sorting'], about: 'о Python, сложности, коллекциях, сетях и базах данных' },
+  ml: { modules: ['ml-metrics', 'ml-classic', 'ml-dl', 'ml-math', 'ml-code', 'complexity'], about: 'о метриках, моделях, нейросетях, математике и сложности алгоритмов' },
+}
+
+function TheoryDrill({ track }: { track: Track }) {
   const pool = useMemo(
     () =>
       lessons
-        .filter((l) => ['py-deep', 'backend', 'complexity', 'py-collections', 'hashing', 'sorting'].includes(l.module))
+        .filter((l) => DRILL[track].modules.includes(l.module) && (!l.track || l.track === track))
         .flatMap((l) => l.oral.map((q, i) => ({ ...q, id: `iwo:${l.id}#${i}`, lesson: l }))),
-    [],
+    [track],
   )
   const [i, setI] = useState(() => Math.floor(Math.random() * Math.max(1, pool.length)))
   const [open, setOpen] = useState(false)
@@ -141,7 +151,7 @@ function TheoryDrill() {
   return (
     <section className="section">
       <h2>Случайный вопрос по теории</h2>
-      <p className="small muted">{plural(pool.length, 'вопрос', 'вопроса', 'вопросов')} из уроков о Python, сложности, коллекциях, сетях и базах данных. Отвечайте вслух за 1–2 минуты, как на секции.</p>
+      <p className="small muted">{plural(pool.length, 'вопрос', 'вопроса', 'вопросов')} из уроков {DRILL[track].about}. Отвечайте вслух за 1–2 минуты, как на секции.</p>
       <div className="card stack">
         <div className="tiny faint">
           Урок: <Link to={`/iwo/l/${q.lesson.id}`}>{q.lesson.title}</Link>

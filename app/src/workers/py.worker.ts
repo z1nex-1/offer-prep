@@ -1,6 +1,7 @@
 import { compare, formatValue } from '../lib/compare'
 
-const PYODIDE = 'https://cdn.jsdelivr.net/npm/pyodide@314.0.7/'
+// Дистрибутив full, а не npm-пакет: в npm нет колёс пакетов, и import numpy не скачивается.
+const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/'
 
 interface Req {
   code: string

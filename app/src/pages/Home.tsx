@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { TRACK_LIST } from '../course/tracks'
 import { CompanyBadge, Months, Progress, plural } from '../components/ui'
 import { companies } from '../data/companies'
 import { tracks } from '../data/tracks'
@@ -32,8 +33,11 @@ export function Home() {
     <div className="container">
       <Link to="/iwo" className="card card-link row between" style={{ marginTop: 24, borderColor: 'var(--accent)' }}>
         <div>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Новое · Яндекс Intern week offer, бэкенд на Python</div>
-          <b style={{ fontSize: 18 }}>Курс с нуля до оффера: диагностика уровня, теория, план по дням до контеста 18 октября и секций 26–30 октября</b>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Новое · Яндекс Intern week offer: бэкенд и ML на Python</div>
+          <b style={{ fontSize: 18 }}>Курс с нуля до оффера: диагностика уровня, теория, задачи с автопроверкой и план по дням</b>
+          <div className="small muted" style={{ marginTop: 4 }}>
+            {TRACK_LIST.map((t) => `${t.title}: контест до ${new Date(t.contestDeadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}, секции ${t.sectionsLabel}`).join(' · ')}
+          </div>
         </div>
         <span className="btn primary">Открыть курс</span>
       </Link>
