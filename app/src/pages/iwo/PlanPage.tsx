@@ -20,6 +20,8 @@ export default function PlanPage() {
   const today = todayISO()
   const st = s.iwo.settings
   const [editing, setEditing] = useState(!st)
+  const [opened, setOpened] = useState<Set<string>>(new Set())
+  const [openAll, setOpenAll] = useState(false)
   const defaultContest = today <= addDays(IWO.contestDeadline, -2) ? addDays(IWO.contestDeadline, -2) : IWO.contestDeadline
   const [form, setForm] = useState({
     contestDate: st?.contestDate ?? defaultContest,
@@ -110,9 +112,12 @@ export default function PlanPage() {
         </button>
       </div>
       <p className="muted">
-        Контест — {fmtDay(plan.contestDate)}, {st!.hours} ч в день. Выполнено {doneN} из {all.length} пунктов. Уроки, свои задачи и задачи контеста отмечаются сами, задачи CodeRun — галочкой после «OK» на сайте Яндекса.
+        Контест — {fmtDay(plan.contestDate)}, {st!.hours} ч в день. Выполнено {doneN} из {plural(all.length, 'пункта', 'пунктов', 'пунктов')}. Уроки, свои задачи и задачи контеста отмечаются сами, задачи CodeRun — галочкой после «OK» на сайте Яндекса.
       </p>
       <Progress value={(doneN / Math.max(1, all.length)) * 100} />
+      <button className="btn ghost sm mt-s" onClick={() => setOpenAll(!openAll)}>
+        {openAll ? 'Свернуть дальние дни' : 'Развернуть все дни'}
+      </button>
 
       <details className="card mt">
         <summary>
@@ -144,6 +149,10 @@ export default function PlanPage() {
               .filter((d) => d.phase === ph)
               .map((d) => {
                 const dn = d.tasks.filter((t) => taskDone(t, s)).length
+                // на телефоне план из сотни пунктов — это лента на десятки экранов; раскрыты только ближайшие дни и долги
+                const near = d.date >= today && d.date <= addDays(today, 2)
+                const debt = d.date < today && dn < d.tasks.length
+                const open = openAll || near || debt || opened.has(d.date)
                 return (
                   <div key={d.date} id={d.date} className={`day ${d.date === today ? 'today' : ''} ${d.date < today ? 'past' : ''}`}>
                     <div className="day-head">
@@ -155,10 +164,18 @@ export default function PlanPage() {
                         {dn}/{d.tasks.length} · ≈ {Math.round(d.minutes / 6) / 10} ч
                       </span>
                     </div>
-                    {d.note && <div className="notice warm mt-s">{d.note}</div>}
-                    {d.tasks.map((t) => (
-                      <TaskRow key={t.id} t={t} s={s} />
-                    ))}
+                    {open ? (
+                      <>
+                        {d.note && <div className="notice warm mt-s">{d.note}</div>}
+                        {d.tasks.map((t) => (
+                          <TaskRow key={t.id} t={t} s={s} />
+                        ))}
+                      </>
+                    ) : (
+                      <button className="btn ghost sm mt-s" onClick={() => setOpened(new Set(opened).add(d.date))}>
+                        Показать {plural(d.tasks.length, 'пункт', 'пункта', 'пунктов')}
+                      </button>
+                    )}
                   </div>
                 )
               })}
@@ -170,11 +187,14 @@ export default function PlanPage() {
         <section className="section">
           <h2>Если останется время</h2>
           <p className="muted small">Не поместилось в выбранные часы. Сначала — пункты из тем с высоким весом для отбора.</p>
-          <div className="card">
+          <details className="card">
+            <summary>
+              <b>{plural(plan.extra.length, 'пункт', 'пункта', 'пунктов')}</b>
+            </summary>
             {plan.extra.map((t) => (
               <TaskRow key={t.id} t={t} s={s} />
             ))}
-          </div>
+          </details>
         </section>
       )}
     </div>
