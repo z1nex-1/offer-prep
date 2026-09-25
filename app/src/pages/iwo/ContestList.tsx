@@ -1,26 +1,36 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Crumbs, DiffChip, plural } from '../../components/ui'
-import { contestById, contestProblems } from '../../course/content'
-import { moduleById, modules } from '../../course/modules'
+import { contestById, trackContest, trackModules } from '../../course/content'
+import { moduleById } from '../../course/modules'
+import { trackOf } from '../../course/tracks'
+import type { ContestProblem, Track } from '../../course/types'
 import { toggleIn, updateIwo, useStore } from '../../lib/store'
 import ContestProblemPage from './ContestProblemPage'
 
-const FORMATS = {
+const formats = (t: Track) => ({
   mid: { n: 4, minutes: 180, title: 'Пробный контест', note: '4 задачи за 3 часа' },
-  final: { n: 5, minutes: 300, title: 'Генеральная репетиция', note: '5 задач за 5 часов — как классический контест бэкенда' },
+  final:
+    t === 'ml'
+      ? { n: 6, minutes: 360, title: 'Генеральная репетиция', note: '6 задач за 6 часов — как контест ML: половина на ML, половина на алгоритмы' }
+      : { n: 5, minutes: 300, title: 'Генеральная репетиция', note: '5 задач за 5 часов — как классический контест бэкенда' },
   short: { n: 3, minutes: 90, title: 'Короткая тренировка', note: '3 задачи за 1,5 часа' },
-}
+})
+type FormatKey = keyof ReturnType<typeof formats>
 
 // Задачи из разных модулей и по возрастанию сложности — так устроены настоящие контесты.
-function pickSet(n: number, solved: Record<string, number>): string[] {
-  const pool = contestProblems.filter((p) => !solved[p.id])
-  const src = pool.length >= n ? pool : contestProblems
-  const want = n >= 5 ? ['easy', 'easy', 'medium', 'medium', 'hard'] : n === 4 ? ['easy', 'medium', 'medium', 'hard'] : ['easy', 'medium', 'medium']
+// В контесте ML половина задач — на классическое ML, поэтому для ML набор чередует части.
+function pickSet(n: number, solved: Record<string, number>, all: ContestProblem[], track: Track): string[] {
+  const pool = all.filter((p) => !solved[p.id])
+  const src = pool.length >= n ? pool : all
+  const want = n >= 6 ? ['easy', 'easy', 'medium', 'medium', 'hard', 'hard'] : n === 5 ? ['easy', 'easy', 'medium', 'medium', 'hard'] : n === 4 ? ['easy', 'medium', 'medium', 'hard'] : ['easy', 'medium', 'medium']
   const out: string[] = []
   const usedModules = new Set<string>()
-  for (const d of want) {
-    const cand = src.filter((p) => p.difficulty === d && !out.includes(p.id))
+  const isMl = (p: ContestProblem) => moduleById[p.module]?.part === 'ml'
+  for (const [i, d] of want.entries()) {
+    const side = track === 'ml' ? (q: ContestProblem) => isMl(q) === (i % 2 === 1) : () => true
+    const sided = src.filter((p) => side(p) && p.difficulty === d && !out.includes(p.id))
+    const cand = sided.length ? sided : src.filter((p) => p.difficulty === d && !out.includes(p.id))
     const fresh = cand.filter((p) => !usedModules.has(p.module))
     const list = fresh.length ? fresh : cand.length ? cand : src.filter((p) => !out.includes(p.id))
     const p = list[Math.floor(Math.random() * list.length)]
@@ -93,15 +103,18 @@ function Virtual() {
 export default function ContestList() {
   const [sp] = useSearchParams()
   const s = useStore((x) => x)
+  const track = trackOf(s.iwo)
+  const FORMATS = formats(track)
+  const contestProblems = trackContest(track)
   const v = s.iwo.virtual
-  const preset = (sp.get('virtual') as keyof typeof FORMATS) || 'final'
-  const [fmtKey, setFmtKey] = useState<keyof typeof FORMATS>(FORMATS[preset] ? preset : 'final')
+  const preset = (sp.get('virtual') as FormatKey) || 'final'
+  const [fmtKey, setFmtKey] = useState<FormatKey>(FORMATS[preset] ? preset : 'final')
 
   if (v && v.start + v.minutes * 60000 > Date.now()) return <Virtual />
 
   const start = () => {
     const f = FORMATS[fmtKey]
-    const ids = pickSet(f.n, s.iwo.contest)
+    const ids = pickSet(f.n, s.iwo.contest, contestProblems, track)
     // Решения из прошлых попыток не должны засчитываться в новой — сбрасываем отметки выбранных задач.
     ids.forEach((id) => toggleIn('contest', id, false))
     updateIwo((x) => ({ ...x, virtual: { start: Date.now(), minutes: f.minutes, ids } }))
@@ -120,8 +133,8 @@ export default function ContestList() {
         <h2 style={{ marginTop: 0 }}>Пробный контест с таймером</h2>
         <p className="muted small">Случайный набор нерешённых задач из разных тем по возрастанию сложности. Подсказки, разборы и просмотр скрытых тестов отключены. Таймер не останавливается — как после кнопки «Начать» в Яндекс Контесте.</p>
         <div className="row">
-          <select className="input" style={{ maxWidth: 360 }} value={fmtKey} onChange={(e) => setFmtKey(e.target.value as keyof typeof FORMATS)}>
-            {Object.entries(FORMATS).map(([k, f]) => (
+          <select className="input" style={{ maxWidth: 360 }} value={fmtKey} onChange={(e) => setFmtKey(e.target.value as FormatKey)}>
+            {(Object.entries(FORMATS) as [FormatKey, (typeof FORMATS)[FormatKey]][]).map(([k, f]) => (
               <option key={k} value={k}>
                 {f.title}: {f.note}
               </option>
@@ -142,7 +155,7 @@ export default function ContestList() {
         )}
       </section>
 
-      {modules
+      {trackModules(track)
         .filter((m) => contestProblems.some((p) => p.module === m.id))
         .map((m) => {
           const list = contestProblems.filter((p) => p.module === m.id)

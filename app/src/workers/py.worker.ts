@@ -19,6 +19,7 @@ interface Pyodide {
   runPython: (code: string) => unknown
   globals: { set: (k: string, v: unknown) => void; get: (k: string) => unknown }
   setStdout: (o: { batched: (s: string) => void }) => void
+  loadPackagesFromImports: (code: string) => Promise<unknown>
 }
 
 let py: Promise<Pyodide> | null = null
@@ -94,6 +95,8 @@ def __run_program(src, inp):
 async function runProgram(req: ProgramReq) {
   try {
     const p = await boot()
+    // В контесте ML решения пишут с NumPy; пакет качается с CDN только при первом import.
+    await p.loadPackagesFromImports(req.code)
     p.runPython(PROGRAM)
     p.globals.set('__src', req.code)
     for (let i = 0; i < req.inputs.length; i++) {

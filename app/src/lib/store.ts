@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import type { Track } from '../course/types.ts'
 import type { CompanyId, TrackId } from '../types'
 
 export interface CardState {
@@ -44,8 +45,8 @@ export interface State {
   notes: Record<string, string>
   iwo: IwoState
 }
-
 export interface IwoState {
+  track?: Track
   diag?: { at: number; answers: Record<string, number> }
   lessons: Record<string, number>
   checks: Record<string, { at: number; score: number; total: number }>

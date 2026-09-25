@@ -11,7 +11,8 @@ def tests():
 
 
 def brute(inp):
-    n = int(inp.strip())
+    # Первая сумма — по строке: int() не переводит строки длиннее 4300 цифр.
+    n = sum(int(c) for c in inp.strip())
     while n >= 10:
         n = sum(int(c) for c in str(n))
     return str(n)

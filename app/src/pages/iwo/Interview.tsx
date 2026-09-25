@@ -5,6 +5,7 @@ import { lessons } from '../../course/content'
 import { modules } from '../../course/modules'
 import { problems } from '../../data/problems'
 import { rateCard, useStore } from '../../lib/store'
+import { trackOf } from '../../course/tracks'
 
 const STEPS = [
   ['Уточнить условие', 'Переспросить формат входа и выхода, ограничения, что делать с пустыми данными и дубликатами. Интервьюер оценивает, как вы задаёте вопросы.'],
@@ -20,6 +21,7 @@ const OFFICIAL = ['valid-anagram', 'generate-parentheses', 'remove-duplicates', 
 export default function Interview() {
   const nav = useNavigate()
   const solved = useStore((s) => s.problems)
+  const track = useStore((s) => trackOf(s.iwo))
   const [mod, setMod] = useState('')
   const [diff, setDiff] = useState<'any' | 'easy' | 'medium'>('medium')
 
@@ -40,7 +42,9 @@ export default function Interview() {
       <Crumbs items={[{ to: '/iwo', label: 'Курс IWO' }, { label: 'Тренажёр секции' }]} />
       <h1>Тренажёр технической секции</h1>
       <p className="lead">
-        На секции Intern week offer дают 2–3 задачи на алгоритмы и вопросы по теории. Запускать код и пользоваться IDE нельзя. Оценивают знание языка, умение оценить сложность, найти оптимальное решение и написать читаемый код.
+        {track === 'ml'
+          ? 'На алгоритмическом интервью ML дают 2 задачи на 60 минут в совместном редакторе и задают теоретические вопросы по ходу решения; на секции ML & Programming к разговору о моделях и метриках тоже добавляют задачи на код. Оценивают знание языка, умение оценить сложность, найти оптимальное решение и написать читаемый код.'
+          : 'На секции Intern week offer дают 2–3 задачи на алгоритмы и вопросы по теории. Запускать код и пользоваться IDE нельзя. Оценивают знание языка, умение оценить сложность, найти оптимальное решение и написать читаемый код.'}
       </p>
 
       <section className="card section">

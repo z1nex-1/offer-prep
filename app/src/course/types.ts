@@ -20,9 +20,12 @@ export interface Lesson {
   body: string
   check: MCQ[]
   oral: OralQ[]
+  track?: Track
 }
 
-export type Part = 'start' | 'python' | 'algo' | 'interview' | 'theory'
+export type Part = 'start' | 'python' | 'algo' | 'ml' | 'interview' | 'theory'
+
+export type Track = 'backend' | 'ml'
 
 export interface CourseModule {
   id: string
@@ -34,6 +37,8 @@ export interface CourseModule {
   problems: string[]
   coderunTags: string[]
   handbook?: { title: string; url: string }[]
+  // Направления Intern week offer, в план которых входит модуль; без поля — во все.
+  tracks?: Track[]
 }
 
 export interface DiagQ extends MCQ {

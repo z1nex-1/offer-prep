@@ -1,6 +1,7 @@
 import { modules } from './modules.ts'
 import { parseContest, parseDiag, parseLesson } from './parse.ts'
-import type { CodeRunProblem, ContestProblem, DiagQ, Lesson, YandexPick } from './types.ts'
+import { TRACKS, inTrack } from './tracks.ts'
+import type { CodeRunProblem, ContestProblem, DiagQ, Lesson, Track, YandexPick } from './types.ts'
 import coderunRaw from './content/coderun.json'
 import contestGen from './content/contest.gen.json'
 
@@ -19,8 +20,23 @@ export const lessons: Lesson[] = Object.entries(lessonFiles)
 
 export const lessonById: Record<string, Lesson> = Object.fromEntries(lessons.map((l) => [l.id, l]))
 
-export function moduleLessons(moduleId: string): Lesson[] {
-  return lessons.filter((l) => l.module === moduleId)
+const lessonInTrack = (l: Lesson, t?: Track) => !t || !l.track || l.track === t
+
+// Без направления — все уроки модуля; с направлением — без уроков, написанных под другое направление.
+export function moduleLessons(moduleId: string, t?: Track): Lesson[] {
+  return lessons.filter((l) => l.module === moduleId && lessonInTrack(l, t))
+}
+
+export function trackModules(t: Track) {
+  const parts = TRACKS[t].parts
+  return modules.filter((m) => inTrack(m, t) && parts.includes(m.part)).sort((a, b) => parts.indexOf(a.part) - parts.indexOf(b.part))
+}
+
+const trackModuleIds = (t: Track) => new Set(trackModules(t).map((m) => m.id))
+
+export function trackLessons(t: Track): Lesson[] {
+  const ids = trackModuleIds(t)
+  return lessons.filter((l) => ids.has(l.module) && lessonInTrack(l, t))
 }
 
 export const diagnostic: DiagQ[] = Object.entries(diagFiles)
@@ -41,6 +57,16 @@ export const contestProblems: ContestProblem[] = Object.entries(contestFiles)
     }
   })
   .sort((a, b) => (moduleOrder.get(a.module) ?? 99) - (moduleOrder.get(b.module) ?? 99) || ['easy', 'medium', 'hard'].indexOf(a.difficulty) - ['easy', 'medium', 'hard'].indexOf(b.difficulty))
+
+export function trackDiagnostic(t: Track): DiagQ[] {
+  const ids = trackModuleIds(t)
+  return diagnostic.filter((q) => ids.has(q.module) && (!q.lesson || !lessonById[q.lesson] || lessonInTrack(lessonById[q.lesson], t)))
+}
+
+export function trackContest(t: Track): ContestProblem[] {
+  const ids = trackModuleIds(t)
+  return contestProblems.filter((p) => ids.has(p.module))
+}
 
 export const contestById: Record<string, ContestProblem> = Object.fromEntries(contestProblems.map((p) => [p.id, p]))
 

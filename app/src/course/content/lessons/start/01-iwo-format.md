@@ -1,6 +1,7 @@
 ---
 id: iwo-format
 module: start
+track: backend
 title: Как устроен Intern week offer и что на нём проверяют
 minutes: 20
 summary: Этапы, даты осени 2026 года, формат контеста и секций, критерии оценки и то, как курс превращает их в план подготовки.

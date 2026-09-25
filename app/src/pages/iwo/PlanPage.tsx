@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Crumbs, Progress, plural } from '../../components/ui'
-import { modules } from '../../course/modules'
+import { trackModules } from '../../course/content'
 import { buildCoursePlan, taskDone, type Day } from '../../course/plan'
-import { IWO, addDays, fmtDay, todayISO } from '../../course/progress'
+import { addDays, fmtDay, todayISO } from '../../course/progress'
+import { TRACKS, TRACK_LIST, trackOf } from '../../course/tracks'
+import type { Track } from '../../course/types'
 import { MasteryChip, TaskRow } from '../../course/ui'
 import { updateIwo, useStore } from '../../lib/store'
 
@@ -22,20 +24,27 @@ export default function PlanPage() {
   const [editing, setEditing] = useState(!st)
   const [opened, setOpened] = useState<Set<string>>(new Set())
   const [openAll, setOpenAll] = useState(false)
-  const defaultContest = today <= addDays(IWO.contestDeadline, -2) ? addDays(IWO.contestDeadline, -2) : IWO.contestDeadline
+  const track = trackOf(s.iwo)
+  const defaultContest = (t: Track) => {
+    const dl = TRACKS[t].contestDeadline
+    return today <= addDays(dl, -2) ? addDays(dl, -2) : dl
+  }
   const [form, setForm] = useState({
-    contestDate: st?.contestDate ?? defaultContest,
+    track,
+    contestDate: st?.contestDate && st.contestDate <= TRACKS[track].contestDeadline ? st.contestDate : defaultContest(track),
     hours: st?.hours ?? 4,
     start: st?.start ?? today,
     startLevel: (sp.get('zero') ? 'zero' : st?.startLevel ?? 'auto') as 'auto' | 'zero',
   })
   const plan = useMemo(() => buildCoursePlan(s, today), [s, today])
 
+  const T = TRACKS[form.track]
   const dates: string[] = []
-  for (let d = today; d <= IWO.contestDeadline; d = addDays(d, 1)) dates.push(d)
+  for (let d = today; d <= T.contestDeadline; d = addDays(d, 1)) dates.push(d)
 
   const save = () => {
-    updateIwo((x) => ({ ...x, settings: { ...form, start: form.start < today ? today : form.start } }))
+    const { track: t, ...rest } = form
+    updateIwo((x) => ({ ...x, track: t, settings: { ...rest, start: form.start < today ? today : form.start } }))
     setEditing(false)
   }
 
@@ -52,16 +61,27 @@ export default function PlanPage() {
         <div className="card stack">
           <div className="grid grid-2">
             <div className="field">
+              <label>Направление</label>
+              <select className="input" value={form.track} onChange={(e) => { const t = e.target.value as Track; setForm({ ...form, track: t, contestDate: form.contestDate <= TRACKS[t].contestDeadline ? form.contestDate : defaultContest(t) }) }}>
+                {TRACK_LIST.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title} — контест до {fmtDay(t.contestDeadline, false)}, секции {t.sectionsLabel}
+                  </option>
+                ))}
+              </select>
+              <span className="tiny faint">Python и алгоритмы общие; у ML добавляются математика, модели, метрики и нейросети.</span>
+            </div>
+            <div className="field">
               <label>Когда решаете контест</label>
               <select className="input" value={form.contestDate} onChange={(e) => setForm({ ...form, contestDate: e.target.value })}>
                 {dates.map((d) => (
                   <option key={d} value={d}>
                     {fmtDay(d)}
-                    {d === IWO.contestDeadline ? ' — последний день' : ''}
+                    {d === T.contestDeadline ? ' — последний день' : ''}
                   </option>
                 ))}
               </select>
-              <span className="tiny faint">Советуем не позже 16 октября: останется запас на сбой и отдых перед секциями.</span>
+              <span className="tiny faint">Советуем не позже {fmtDay(addDays(T.contestDeadline, -2), false)}: останется запас на сбой и отдых перед секциями.</span>
             </div>
             <div className="field">
               <label>Часов в день</label>
@@ -112,7 +132,7 @@ export default function PlanPage() {
         </button>
       </div>
       <p className="muted">
-        Контест — {fmtDay(plan.contestDate)}, {st!.hours} ч в день. Выполнено {doneN} из {plural(all.length, 'пункта', 'пунктов', 'пунктов')}. Уроки, свои задачи и задачи контеста отмечаются сами, задачи CodeRun — галочкой после «OK» на сайте Яндекса.
+        {TRACKS[track].title} · контест — {fmtDay(plan.contestDate)}, {st!.hours} ч в день. Выполнено {doneN} из {plural(all.length, 'пункта', 'пунктов', 'пунктов')}. Уроки, свои задачи и задачи контеста отмечаются сами, задачи CodeRun — галочкой после «OK» на сайте Яндекса.
       </p>
       <Progress value={(doneN / Math.max(1, all.length)) * 100} />
       <button className="btn ghost sm mt-s" onClick={() => setOpenAll(!openAll)}>
@@ -124,7 +144,7 @@ export default function PlanPage() {
           <b>Уровень по темам</b> <span className="small muted">— по нему выбраны теория и задачи</span>
         </summary>
         <div className="grid grid-3 mt-s">
-          {modules
+          {trackModules(track)
             .filter((m) => m.id !== 'start')
             .map((m) => (
               <div key={m.id} className="row between small">

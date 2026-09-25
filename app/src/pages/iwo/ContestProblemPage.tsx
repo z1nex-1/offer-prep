@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CodeEditor } from '../../components/CodeEditor'
 import { Crumbs, DiffChip, Md } from '../../components/ui'
-import { contestById, contestProblems, loadContestTests } from '../../course/content'
+import { contestById, contestProblems, loadContestTests, trackContest } from '../../course/content'
 import { moduleById } from '../../course/modules'
+import { trackOf } from '../../course/tracks'
 import { runProgram, sameOutput, warmPython } from '../../lib/runner'
 import { toggleIn, update, useStore } from '../../lib/store'
 
@@ -43,6 +44,7 @@ export default function ContestProblemPage({ virtual, pid }: { virtual?: boolean
   const p = contestById[id]
   const saved = useStore((s) => s.code[`contest:${id}`])
   const solved = useStore((s) => !!s.iwo.contest[id])
+  const track = useStore((s) => trackOf(s.iwo))
   const [code, setCode] = useState('')
   const [tab, setTab] = useState<'task' | 'hints' | 'solution'>('task')
   const [hints, setHints] = useState(0)
@@ -120,8 +122,9 @@ export default function ContestProblemPage({ virtual, pid }: { virtual?: boolean
     setCustomOut(r.runs[0])
   }
 
-  const idx = contestProblems.findIndex((x) => x.id === p.id)
-  const next = contestProblems[idx + 1]
+  const seq = trackContest(track).some((x) => x.id === p.id) ? trackContest(track) : contestProblems
+  const idx = seq.findIndex((x) => x.id === p.id)
+  const next = seq[idx + 1]
   const VERDICT_TEXT = { OK: 'OK — все тесты пройдены', WA: 'WA — неправильный ответ', RE: 'RE — ошибка во время выполнения', TL: 'TL — превышено время', CE: 'CE — ошибка компиляции' }
 
   return (

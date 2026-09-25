@@ -1,9 +1,11 @@
 import { plural } from '../components/ui.tsx'
 import { problems } from '../data/problems.ts'
 import type { State } from '../lib/store.ts'
-import { coderunForModule, coderunLevel, contestProblems, diagnostic, moduleLessons, yandexPicks } from './content.ts'
+import { coderunForModule, coderunLevel, contestProblems, moduleLessons, trackDiagnostic, trackModules, yandexPicks } from './content.ts'
 import { modules } from './modules.ts'
-import { IWO, addDays, daysBetween, moduleMastery, type Mastery } from './progress.ts'
+import { IWO_REGISTER, addDays, daysBetween, fmtDay, moduleMastery, type Mastery } from './progress.ts'
+import { TRACKS, trackOf } from './tracks.ts'
+import type { Track } from './types.ts'
 
 export type TaskKind = 'lesson' | 'problem' | 'contest' | 'coderun' | 'review' | 'virtual' | 'mock' | 'milestone' | 'interview' | 'setup'
 
@@ -45,11 +47,12 @@ function problemTask(id: string, f: number, module: string): Task | null {
   return { id: `problem:${id}`, kind: 'problem', title: p.title, detail: `Своя задача · ${p.pattern}`, minutes: Math.round(PROBLEM_MIN[p.difficulty] * f), to: `/problems/${id}`, ref: id, module }
 }
 
-function moduleTasks(moduleId: string, mastery: Mastery, used: Set<string>, answers: Record<string, number>): Task[] {
+function moduleTasks(moduleId: string, mastery: Mastery, used: Set<string>, answers: Record<string, number>, track: Track): Task[] {
   const m = modules.find((x) => x.id === moduleId)!
   const out: Task[] = []
   const lessonFactor = mastery === 0 ? 1 : 0.5
-  for (const l of moduleLessons(moduleId)) {
+  const diagnostic = trackDiagnostic(track)
+  for (const l of moduleLessons(moduleId, track)) {
     if (mastery === 2 && moduleId !== 'start') continue
     // Урок пропускается, если все вопросы диагностики, помеченные этим уроком, отвечены верно.
     const tagged = diagnostic.filter((q) => q.lesson === l.id)
@@ -115,13 +118,16 @@ function moduleTasks(moduleId: string, mastery: Mastery, used: Set<string>, answ
 export function buildCoursePlan(s: State, today: string): CoursePlan | null {
   const st = s.iwo.settings
   if (!st) return null
+  const track = trackOf(s.iwo)
+  const T = TRACKS[track]
   const mastery = moduleMastery(s.iwo)
   const cap = st.hours * 60
   const start = st.start > today ? st.start : today
-  const contestDate = st.contestDate
+  // Дата из настроек могла быть выбрана для другого направления с более поздним дедлайном.
+  const contestDate = st.contestDate > T.contestDeadline ? T.contestDeadline : st.contestDate
   const days: Day[] = []
-  for (let d = start; d <= IWO.sectionsEnd; d = addDays(d, 1)) {
-    const phase: Day['phase'] = d < contestDate ? 'learn' : d === contestDate ? 'contest' : d < IWO.sectionsStart ? 'interview' : 'sections'
+  for (let d = start; d <= T.sectionsEnd; d = addDays(d, 1)) {
+    const phase: Day['phase'] = d < contestDate ? 'learn' : d === contestDate ? 'contest' : d < T.sectionsStart ? 'interview' : 'sections'
     days.push({ date: d, phase, tasks: [], minutes: 0, capacity: phase === 'sections' ? Math.min(cap, 120) : cap })
   }
   const learnDays = days.filter((d) => d.phase === 'learn')
@@ -135,11 +141,11 @@ export function buildCoursePlan(s: State, today: string): CoursePlan | null {
   // Опорные точки: репетиции контеста, сам контест, повторение.
   const contestDay = days.find((d) => d.phase === 'contest')
   if (contestDay) {
-    put(contestDay, { id: 'milestone:contest', kind: 'milestone', title: 'Контест Intern week offer', detail: 'Зарегистрироваться и пройти контест в спокойной обстановке. Дедлайн — 18 октября 23:59 по Москве.', minutes: 300, to: IWO.register, external: true })
+    put(contestDay, { id: 'milestone:contest', kind: 'milestone', title: 'Контест Intern week offer', detail: `Зарегистрироваться и пройти контест в спокойной обстановке: ${T.contestTasks} задач за ${T.contestHours} часов. Дедлайн — ${fmtDay(T.contestDeadline, false)} 23:59 по Москве.`, minutes: T.contestHours * 60, to: IWO_REGISTER, external: true })
   }
   if (learnDays.length >= 3) {
     const rehearsal = learnDays[learnDays.length - 2]
-    put(rehearsal, { id: 'virtual:final', kind: 'virtual', title: 'Генеральная репетиция контеста', detail: '5 задач, 5 часов, без подсказок и разборов', minutes: 300, to: '/iwo/contest?virtual=final' })
+    put(rehearsal, { id: 'virtual:final', kind: 'virtual', title: 'Генеральная репетиция контеста', detail: `${T.contestTasks} задач, ${T.contestHours} часов, без подсказок и разборов`, minutes: T.contestHours * 60, to: '/iwo/contest?virtual=final' })
   }
   if (learnDays.length >= 10) {
     const mid = learnDays[Math.floor(learnDays.length * 0.55)]
@@ -153,7 +159,7 @@ export function buildCoursePlan(s: State, today: string): CoursePlan | null {
     put(d, { id: `review:${d.date}`, kind: 'review', title: 'Повторение карточек', detail: 'Теория вслух: отвечать до того, как открыть ответ', minutes: 25, to: '/iwo/review' })
     put(d, { id: `interview:${d.date}`, kind: 'interview', title: 'Две задачи в режиме собеседования', detail: 'Без запуска кода, 25 минут на задачу, рассуждение вслух', minutes: 60, to: '/iwo/interview' })
     if (i % 2 === 1 || i === interviewDays.length - 1)
-      put(d, { id: `mock:${d.date}`, kind: 'mock', title: 'Пробное интервью в формате Яндекса', detail: 'Код, теория и отчёт со слабыми темами', minutes: 75, to: '/mock?track=backend&company=yandex' })
+      put(d, { id: `mock:${d.date}`, kind: 'mock', title: 'Пробное интервью в формате Яндекса', detail: 'Код, теория и отчёт со слабыми темами', minutes: 75, to: `/mock?track=${T.mockTrack}&company=yandex` })
   })
   days
     .filter((d) => d.phase === 'sections')
@@ -162,17 +168,18 @@ export function buildCoursePlan(s: State, today: string): CoursePlan | null {
     )
 
   const used = new Set<string>()
-  const learnQueue: Task[] = [{ id: 'setup:register', kind: 'setup', title: 'Зарегистрироваться на Intern week offer', detail: 'Анкета: учёба, проекты, олимпиады. Контест можно пройти позже, до 18 октября.', minutes: 30, to: IWO.register, external: true }]
+  const learnQueue: Task[] = [{ id: 'setup:register', kind: 'setup', title: 'Зарегистрироваться на Intern week offer', detail: `Анкета: учёба, проекты, олимпиады. Контест можно пройти позже, до ${fmtDay(T.contestDeadline, false)}.`, minutes: 30, to: IWO_REGISTER, external: true }]
   const interviewQueue: Task[] = []
-  for (const m of modules) {
-    const tasks = moduleTasks(m.id, mastery[m.id] ?? 0, used, s.iwo.diag?.answers ?? {})
+  const ms = trackModules(track)
+  for (const m of ms) {
+    const tasks = moduleTasks(m.id, mastery[m.id] ?? 0, used, s.iwo.diag?.answers ?? {}, track)
     if (m.stage === 'interview') interviewQueue.push(...tasks)
     else learnQueue.push(...tasks)
   }
   // Устная часть по алгоритмическим модулям идёт в фазу собеседований.
   interviewQueue.unshift(
-    ...modules
-      .filter((m) => m.part === 'algo' && m.stage !== 'interview')
+    ...ms
+      .filter((m) => (m.part === 'algo' || m.part === 'ml') && m.stage !== 'interview')
       .map<Task>((m) => ({ id: `oral:${m.id}`, kind: 'review', title: `Вопросы вслух: ${m.title.toLowerCase()}`, detail: 'Объяснить идеи и сложность, как на секции', minutes: 20, to: `/iwo/m/${m.id}#oral`, module: m.id, optional: m.weight < 3 })),
   )
 

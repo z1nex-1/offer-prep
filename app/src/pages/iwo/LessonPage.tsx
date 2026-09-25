@@ -1,7 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import { Crumbs, Md, plural } from '../../components/ui'
-import { contestProblems, lessonById, lessons, moduleLessons } from '../../course/content'
+import { contestProblems, lessonById, lessons, moduleLessons, trackLessons } from '../../course/content'
 import { moduleById } from '../../course/modules'
+import { trackOf } from '../../course/tracks'
 import { QuizBlock } from '../../course/ui'
 import { problems } from '../../data/problems'
 import { toggleIn, updateIwo, useStore } from '../../lib/store'
@@ -12,12 +13,16 @@ export default function LessonPage() {
   const l = lessonById[id]
   const done = useStore((s) => !!s.iwo.lessons[id])
   const check = useStore((s) => s.iwo.checks[id])
+  const track = useStore((s) => trackOf(s.iwo))
   if (!l) return <div className="container empty">Урок не найден. <Link to="/iwo">К курсу</Link></div>
   const m = moduleById[l.module]
-  const idx = lessons.findIndex((x) => x.id === l.id)
-  const prev = lessons[idx - 1]
-  const next = lessons[idx + 1]
-  const inModule = moduleLessons(l.module)
+  // Урок другого направления (открыт по ссылке) листается внутри своего направления.
+  const own_ = trackLessons(track)
+  const seq = own_.some((x) => x.id === l.id) ? own_ : l.track ? trackLessons(l.track) : lessons
+  const idx = seq.findIndex((x) => x.id === l.id)
+  const prev = seq[idx - 1]
+  const next = seq[idx + 1]
+  const inModule = moduleLessons(l.module, l.track ?? track)
   const isLastInModule = inModule[inModule.length - 1]?.id === l.id
   const own = (m?.problems ?? []).map((pid) => problems.find((p) => p.id === pid)).filter((p): p is NonNullable<typeof p> => !!p)
   const contest = contestProblems.filter((p) => p.module === l.module)

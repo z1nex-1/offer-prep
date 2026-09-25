@@ -1,36 +1,58 @@
 import { Link } from 'react-router-dom'
 import { Progress, plural } from '../../components/ui'
-import { coderun, contestProblems, diagnostic, lessons, moduleLessons } from '../../course/content'
-import { PARTS, modules } from '../../course/modules'
+import { coderun, moduleLessons, trackContest, trackDiagnostic, trackLessons, trackModules } from '../../course/content'
+import { PARTS } from '../../course/modules'
 import { buildCoursePlan, taskDone } from '../../course/plan'
-import { IWO, daysBetween, fmtDay, moduleMastery, moduleProgress, todayISO } from '../../course/progress'
+import { daysBetween, fmtDay, moduleMastery, moduleProgress, todayISO } from '../../course/progress'
+import { TRACKS, TRACK_LIST, trackOf, type TrackInfo } from '../../course/tracks'
 import { MasteryChip, TaskRow } from '../../course/ui'
-import { useStore } from '../../lib/store'
+import { updateIwo, useStore } from '../../lib/store'
 
-function Countdown() {
+function Countdown({ t }: { t: TrackInfo }) {
   const today = todayISO()
-  const toContest = daysBetween(today, IWO.contestDeadline)
-  const toSections = daysBetween(today, IWO.sectionsStart)
+  const toContest = daysBetween(today, t.contestDeadline)
+  const toSections = daysBetween(today, t.sectionsStart)
   return (
     <div className="countdown">
       <div className="stat card">
         <b>{toContest >= 0 ? plural(toContest, 'день', 'дня', 'дней') : 'прошёл'}</b>
-        <span>до дедлайна контеста — 18 октября, 23:59 МСК</span>
+        <span>
+          до дедлайна контеста — {fmtDay(t.contestDeadline, false)}, 23:59 МСК · {plural(t.contestTasks, 'задача', 'задачи', 'задач')} за {plural(t.contestHours, 'час', 'часа', 'часов')}
+        </span>
       </div>
       <div className="stat card">
         <b>{toSections >= 0 ? plural(toSections, 'день', 'дня', 'дней') : 'идут'}</b>
-        <span>до технических секций — 26–30 октября, онлайн</span>
+        <span>до технических секций — {t.sectionsLabel}, онлайн</span>
       </div>
       <div className="stat card">
         <b>2 секции</b>
-        <span>по 2–3 задачи и вопросы по теории, код без запуска и IDE</span>
+        <span>{t.sectionsAbout}</span>
       </div>
+    </div>
+  )
+}
+
+function TrackSwitch({ current }: { current: TrackInfo['id'] }) {
+  return (
+    <div className="row mb" role="group" aria-label="Направление">
+      {TRACK_LIST.map((t) => (
+        <button key={t.id} className={t.id === current ? 'btn sm primary' : 'btn sm'} aria-pressed={t.id === current} onClick={() => updateIwo((x) => ({ ...x, track: t.id }))}>
+          {t.title} · контест до {fmtDay(t.contestDeadline, false)}
+        </button>
+      ))}
     </div>
   )
 }
 
 export default function Hub() {
   const s = useStore((x) => x)
+  const track = trackOf(s.iwo)
+  const T = TRACKS[track]
+  const lessons = trackLessons(track)
+  const diagnostic = trackDiagnostic(track)
+  const contestProblems = trackContest(track)
+  const modules = trackModules(track)
+  const fresh = s.iwo.diag ? modules.filter((m) => diagnostic.some((q) => q.module === m.id) && !diagnostic.some((q) => q.module === m.id && s.iwo.diag!.answers[q.id] !== undefined)).length : 0
   const today = todayISO()
   const mastery = moduleMastery(s.iwo)
   const plan = buildCoursePlan(s, today)
@@ -42,19 +64,20 @@ export default function Hub() {
   return (
     <div className="container">
       <section className="hero" style={{ paddingBottom: 12 }}>
-        <div className="eyebrow">Яндекс · Intern week offer · бэкенд · Python</div>
+        <TrackSwitch current={track} />
+        <div className="eyebrow">{T.eyebrow}</div>
         <h1>Курс подготовки к Intern week offer</h1>
         <p className="lead" style={{ maxWidth: 820 }}>
-          Отбор за неделю: контест, две технические секции и встречи с командами. Здесь — вся теория с нуля, от первой программы на Python до графов и динамики, тест для определения уровня, план по дням до 18 октября и тренировка в формате Яндекс Контеста и живых секций.
+          {T.lead}
         </p>
-        <Countdown />
+        <Countdown t={T} />
       </section>
 
       {!s.iwo.diag && (
         <div className="card section" style={{ borderColor: 'var(--accent)' }}>
           <h2 style={{ marginTop: 0 }}>Шаг 1. Определить уровень</h2>
           <p className="muted">
-            Тест из {plural(diagnostic.length, 'вопроса', 'вопросов', 'вопросов')} по всем темам курса: Python, алгоритмы, теория. Отвечайте честно, кнопка «Не знаю» лучше угадывания — по результатам курс покажет, какие темы учить с нуля, какие повторить, а какие пропустить. Если по теме подряд идут ошибки, тест сам перейдёт к следующей. Занимает 25–40 минут.
+            Тест из {plural(diagnostic.length, 'вопроса', 'вопросов', 'вопросов')} по всем темам направления: {track === 'ml' ? 'Python, алгоритмы, математика, модели, метрики, нейросети' : 'Python, алгоритмы, теория'}. Отвечайте честно, кнопка «Не знаю» лучше угадывания — по результатам курс покажет, какие темы учить с нуля, какие повторить, а какие пропустить. Если по теме подряд идут ошибки, тест сам перейдёт к следующей. Занимает 25–40 минут.
           </p>
           <div className="row">
             <Link className="btn primary" to="/iwo/diagnostic">
@@ -64,6 +87,13 @@ export default function Hub() {
               Я начинаю с нуля — сразу собрать план
             </Link>
           </div>
+        </div>
+      )}
+
+      {s.iwo.diag && fresh > 0 && (
+        <div className="notice warm section">
+          По {plural(fresh, 'теме', 'темам', 'темам')} направления «{T.title}» диагностика ещё не спрашивала — пока они считаются темами «с нуля».{' '}
+          <Link to="/iwo/diagnostic">Ответить только на новые вопросы</Link>
         </div>
       )}
 
@@ -130,7 +160,8 @@ export default function Hub() {
             {doneLessons} из {plural(lessons.length, 'урока', 'уроков', 'уроков')} пройдено
           </span>
         </div>
-        {PARTS.map((part) => {
+        {T.parts.map((pid) => {
+          const part = PARTS.find((x) => x.id === pid)!
           const ms = modules.filter((m) => m.part === part.id)
           return (
             <div key={part.id} className="section" style={{ marginTop: 18 }}>
@@ -141,7 +172,7 @@ export default function Hub() {
               <div className="grid grid-3">
                 {ms.map((m) => {
                   const pr = moduleProgress(s, m.id)
-                  const n = moduleLessons(m.id).length
+                  const n = moduleLessons(m.id, track).length
                   return (
                     <Link key={m.id} to={`/iwo/m/${m.id}`} className="card card-link module-card">
                       <h3>{m.title}</h3>

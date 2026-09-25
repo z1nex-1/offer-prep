@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { parseContest, parseDiag, parseLesson } from '../src/course/parse.ts'
 import { modules } from '../src/course/modules.ts'
+import { TRACKS } from '../src/course/tracks.ts'
 import { problems } from '../src/data/problems.ts'
 
 const ROOT = new URL('../src/course/content/', import.meta.url).pathname
@@ -17,6 +18,8 @@ const fail = (...a) => {
 }
 
 const moduleIds = new Set(modules.map((m) => m.id))
+const TRACK_IDS = new Set(Object.keys(TRACKS))
+for (const m of modules) for (const t of m.tracks ?? []) if (!TRACK_IDS.has(t)) fail('НЕТ НАПРАВЛЕНИЯ', t, 'в модуле', m.id)
 const problemIds = new Set(problems.map((p) => p.id))
 for (const m of modules) for (const p of m.problems) if (!problemIds.has(p)) fail('НЕТ ЗАДАЧИ', p, 'в модуле', m.id)
 
@@ -34,6 +37,7 @@ for (const f of walk(join(ROOT, 'lessons')).filter((f) => f.endsWith('.md'))) {
     lessonIds.add(l.id)
     if (!moduleIds.has(l.module)) fail('НЕТ МОДУЛЯ', l.module, rel)
     if (!rel.startsWith(`lessons/${l.module}/`)) fail('УРОК НЕ В СВОЕЙ ПАПКЕ', rel)
+    if (l.track && !TRACK_IDS.has(l.track)) fail('НЕТ НАПРАВЛЕНИЯ', l.track, rel)
     if (/\$[^$\n]+\$/.test(l.body)) fail('LaTeX не отображается', rel)
     perModule[l.module] = (perModule[l.module] ?? 0) + 1
     words += l.body.split(/\s+/).length

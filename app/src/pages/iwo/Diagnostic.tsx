@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Crumbs, Md, Progress, plural } from '../../components/ui'
-import { diagnostic } from '../../course/content'
-import { modules, moduleById } from '../../course/modules'
+import { trackDiagnostic, trackModules } from '../../course/content'
+import { moduleById } from '../../course/modules'
 import { diagScores, masteryFromScore } from '../../course/progress'
+import { TRACKS, trackOf } from '../../course/tracks'
 import { MasteryChip } from '../../course/ui'
 import { updateIwo, useStore } from '../../lib/store'
 
@@ -11,6 +12,7 @@ const DONT_KNOW = -1
 
 function Results() {
   const iwo = useStore((s) => s.iwo)
+  const diagnostic = trackDiagnostic(trackOf(iwo))
   const scores = diagScores(iwo)
   const wrong = diagnostic.filter((q) => iwo.diag && iwo.diag.answers[q.id] !== undefined && iwo.diag.answers[q.id] !== q.answer)
   const [showWrong, setShowWrong] = useState(false)
@@ -29,7 +31,7 @@ function Results() {
             </tr>
           </thead>
           <tbody>
-            {modules
+            {trackModules(trackOf(iwo))
               .filter((m) => scores[m.id])
               .map((m) => {
                 const sc = scores[m.id]!
@@ -75,17 +77,24 @@ function Results() {
 
 export default function Diagnostic() {
   const saved = useStore((s) => s.iwo.diag)
+  const track = useStore((s) => trackOf(s.iwo))
+  const diagnostic = useMemo(() => trackDiagnostic(track), [track])
+  // Темы, по которым ещё не было ни одного ответа: например, после переключения на другое направление.
+  const touched = new Set(saved ? diagnostic.filter((q) => saved.answers[q.id] !== undefined).map((q) => q.module) : [])
+  const fresh = saved ? diagnostic.filter((q) => !touched.has(q.module)) : []
   const [started, setStarted] = useState(false)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [skipped, setSkipped] = useState<Set<string>>(new Set())
   const [finished, setFinished] = useState(false)
 
-  const queue = useMemo(() => diagnostic.filter((q) => !skipped.has(q.module)), [skipped])
+  const queue = useMemo(() => diagnostic.filter((q) => !skipped.has(q.module)), [diagnostic, skipped])
   const current = queue.find((q) => answers[q.id] === undefined)
   const answeredN = Object.keys(answers).length
 
   const finish = (a: Record<string, number>) => {
-    updateIwo((s) => ({ ...s, diag: { at: Date.now(), answers: a } }))
+    // Ответы на вопросы других направлений сохраняются: их модули в этом тесте не спрашивались.
+    const own = new Set(diagnostic.map((q) => q.id))
+    updateIwo((s) => ({ ...s, diag: { at: Date.now(), answers: { ...Object.fromEntries(Object.entries(s.diag?.answers ?? {}).filter(([id]) => !own.has(id))), ...a } } }))
     setFinished(true)
   }
 
@@ -119,29 +128,44 @@ export default function Diagnostic() {
         {saved && <p className="muted">Пройдена {new Date(saved.at).toLocaleString('ru-RU')}.</p>}
         <Results />
         {!finished && (
-          <button
-            className="btn mt"
-            onClick={() => {
-              setAnswers({})
-              setSkipped(new Set())
-              setStarted(true)
-            }}
-          >
-            Пройти диагностику заново
-          </button>
+          <div className="row mt">
+            {saved && fresh.length > 0 && (
+              <button
+                className="btn primary"
+                onClick={() => {
+                  setAnswers(Object.fromEntries(diagnostic.filter((q) => saved.answers[q.id] !== undefined).map((q) => [q.id, saved.answers[q.id]])))
+                  // Темы, по которым уже отвечали, не переспрашиваются — даже если тест тогда пропустил часть вопросов.
+                  setSkipped(touched)
+                  setStarted(true)
+                }}
+              >
+                Ответить на новые вопросы · {fresh.length}
+              </button>
+            )}
+            <button
+              className="btn"
+              onClick={() => {
+                setAnswers({})
+                setSkipped(new Set())
+                setStarted(true)
+              }}
+            >
+              Пройти диагностику заново
+            </button>
+          </div>
         )}
       </div>
     )
   }
 
   if (!started) {
-    const perModule = modules.map((m) => ({ m, n: diagnostic.filter((q) => q.module === m.id).length })).filter((x) => x.n)
+    const perModule = trackModules(track).map((m) => ({ m, n: diagnostic.filter((q) => q.module === m.id).length })).filter((x) => x.n)
     return (
       <div className="container narrow">
         <Crumbs items={[{ to: '/iwo', label: 'Курс IWO' }, { label: 'Диагностика' }]} />
         <h1>Диагностика уровня</h1>
         <p className="lead">
-          {plural(diagnostic.length, 'вопрос', 'вопроса', 'вопросов')} по {plural(perModule.length, 'теме', 'темам', 'темам')} — от основ Python до графов и теории бэкенда. Вопросы внутри темы идут от простых к сложным.
+          {plural(diagnostic.length, 'вопрос', 'вопроса', 'вопросов')} по {plural(perModule.length, 'теме', 'темам', 'темам')} направления «{TRACKS[track].title}» — {track === 'ml' ? 'от основ Python и алгоритмов до моделей, метрик и нейросетей' : 'от основ Python до графов и теории бэкенда'}. Вопросы внутри темы идут от простых к сложным.
         </p>
         <div className="card stack">
           <div>

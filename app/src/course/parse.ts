@@ -115,6 +115,7 @@ export function parseLesson(src: string, file: string): Lesson {
     body: head,
     check: chunks(sections['Самопроверка'] ?? '').map((c) => parseMCQ(c, file)),
     oral: chunks(sections['Вопросы на собеседовании'] ?? '').map(parseOral),
+    ...(meta.track ? { track: meta.track as Lesson['track'] } : {}),
   }
 }
 

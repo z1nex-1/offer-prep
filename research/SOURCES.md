@@ -9,6 +9,10 @@
 | Яндекс | 3200 мест, 4 этапа, обновлённый контест, условия стажировки | https://habr.com/ru/companies/yandex/news/1077762/ |
 | Яндекс | Контест и секции по направлениям: бэкенд (5 задач за 5 ч), фронтенд (5 за 6 ч), аналитика (3 за 3 ч), ML (6 за 6 ч), мобильная разработка, QA (4 задачи), DevOps, ИБ, технический менеджмент | https://yandex.ru/yaintern |
 | Яндекс | Intern week offer: сроки осени 2026, две технические секции для ML и бэкенда, правило 6 месяцев | https://yandex.ru/yaintern/intern-week-offer/ |
+| Яндекс | ML-стажировка: контест 6 задач за 6 часов (классическое ML и алгоритмы на коде), секция ML & Programming (базовые понятия ML на примере алгоритма, offline-метрики, задачи на алгоритмы), алгоритмическое интервью (2 задачи за 60 минут), финалы с командами; тренировочный контест https://contest.yandex.ru/contest/28413/enter | https://yandex.ru/yaintern/ml |
+| Яндекс | Тренировки по ML: лекции и домашние задания в Яндекс Контесте, топ-150 — пробное собеседование на ML-стажировку | https://yandex.ru/yaintern/training/ml-training |
+| Яндекс | Учебник по машинному обучению ШАД (список статей — `research/raw/handbook_ml_articles.txt`) | https://education.yandex.ru/handbook/ml |
+| Яндекс | Хендбук по математике для анализа данных и ML (список статей — `research/raw/handbook_math_articles.txt`) | https://education.yandex.ru/handbook/math |
 | Яндекс | Алгоритмическая секция: пошаговая инструкция авторов задач, примеры с типичными ошибками, советы по подготовке | https://yandex.ru/jobs/interview/algorithms |
 | Яндекс | Стажировка бэкенда: 5 задач за 5 часов, советы руководителей по подготовке | https://yandex.ru/yaintern/backend |
 | Яндекс | Советы дежурного администратора контеста, три типа стажировок | https://education.yandex.ru/journal/otbor-na-stazirovky-backend-yandexa |

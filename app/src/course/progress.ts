@@ -1,24 +1,22 @@
 import type { IwoState, State } from '../lib/store.ts'
-import { contestProblems, diagnostic, moduleLessons } from './content.ts'
+import { contestProblems, moduleLessons, trackDiagnostic, trackModules } from './content.ts'
 import { modules } from './modules.ts'
+import { trackOf } from './tracks.ts'
 
 export type Mastery = 0 | 1 | 2
 
 export const MASTERY_LABEL: Record<Mastery, string> = { 0: 'Учить с нуля', 1: 'Повторить и закрепить', 2: 'Знаю — только практика' }
 export const MASTERY_CLASS: Record<Mastery, string> = { 0: 'hard', 1: 'medium', 2: 'easy' }
 
-export const IWO = {
-  contestDeadline: '2026-10-18',
-  sectionsStart: '2026-10-26',
-  sectionsEnd: '2026-10-30',
-  register: 'https://yandex.ru/yaintern/intern-week-offer/',
-}
+export const IWO_REGISTER = 'https://yandex.ru/yaintern/intern-week-offer/'
 
 // Вес вопроса растёт с уровнем: верный ответ на сложный вопрос говорит о теме больше, чем на простой.
 export function diagScores(iwo: IwoState): Record<string, { score: number; asked: number; total: number } | undefined> {
   const out: Record<string, { score: number; asked: number; total: number } | undefined> = {}
   if (!iwo.diag) return out
-  for (const m of modules) {
+  const t = trackOf(iwo)
+  const diagnostic = trackDiagnostic(t)
+  for (const m of trackModules(t)) {
     const qs = diagnostic.filter((q) => q.module === m.id)
     if (!qs.length) continue
     let got = 0
@@ -45,12 +43,13 @@ export function masteryFromScore(score: number): Mastery {
 export function moduleMastery(iwo: IwoState): Record<string, Mastery> {
   const scores = diagScores(iwo)
   const out: Record<string, Mastery> = {}
-  for (const m of modules) {
+  const t = trackOf(iwo)
+  for (const m of trackModules(t)) {
     const s = scores[m.id]
     let base: Mastery = s ? masteryFromScore(s.score) : iwo.settings?.startLevel === 'zero' || !iwo.diag ? 0 : 1
     if (m.id === 'start') base = 0
     // Пройденные уроки с хорошей самопроверкой поднимают уровень модуля.
-    const ls = moduleLessons(m.id)
+    const ls = moduleLessons(m.id, t)
     if (ls.length && base < 2) {
       const good = ls.filter((l) => iwo.lessons[l.id] && (!l.check.length || (iwo.checks[l.id]?.score ?? 0) >= 0.8 * (iwo.checks[l.id]?.total ?? 1))).length
       if (good === ls.length) base = 2
@@ -71,7 +70,7 @@ export interface ModuleProgress {
 
 export function moduleProgress(s: State, moduleId: string): ModuleProgress {
   const m = modules.find((x) => x.id === moduleId)!
-  const ls = moduleLessons(moduleId)
+  const ls = moduleLessons(moduleId, trackOf(s.iwo))
   const lessonsDone = ls.filter((l) => s.iwo.lessons[l.id]).length
   const contest = contestProblems.filter((p) => p.module === moduleId)
   const practice = m.problems.length + contest.length

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Check, Crumbs, DiffChip, plural } from '../../components/ui'
-import { SELECTIONS, coderunForModule, coderunLevel, coderunUrl, contestProblems, moduleLessons, yandexPicks } from '../../course/content'
-import { moduleById, modules } from '../../course/modules'
+import { SELECTIONS, coderunForModule, coderunLevel, coderunUrl, contestProblems, moduleLessons, trackModules, yandexPicks } from '../../course/content'
+import { moduleById } from '../../course/modules'
 import { moduleMastery } from '../../course/progress'
+import { trackOf } from '../../course/tracks'
 import { MasteryChip } from '../../course/ui'
 import { problems } from '../../data/problems'
 import { toggleIn, useStore } from '../../lib/store'
@@ -81,12 +82,14 @@ export default function ModulePage() {
   const m = moduleById[id]
   const s = useStore((x) => x)
   if (!m) return <div className="container empty">Модуль не найден. <Link to="/iwo">К курсу</Link></div>
-  const ls = moduleLessons(m.id)
+  const track = trackOf(s.iwo)
+  const ls = moduleLessons(m.id, track)
   const mastery = moduleMastery(s.iwo)[m.id]
   const own = m.problems.map((pid) => problems.find((p) => p.id === pid)).filter((p): p is NonNullable<typeof p> => !!p)
   const contest = contestProblems.filter((p) => p.module === m.id)
-  const idx = modules.findIndex((x) => x.id === m.id)
-  const next = modules[idx + 1]
+  const ms = trackModules(track)
+  const idx = ms.findIndex((x) => x.id === m.id)
+  const next = idx === -1 ? undefined : ms[idx + 1]
   const oral = ls.flatMap((l) => l.oral.map((q, i) => ({ q, id: `iwo:${l.id}#${i}` })))
 
   return (
