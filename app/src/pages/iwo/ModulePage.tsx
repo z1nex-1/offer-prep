@@ -190,7 +190,7 @@ export default function ModulePage() {
       {next && (
         <div className="row between section">
           <span />
-          <Link className="btn" to={`/iwo/m/${next.id}`}>
+          <Link className="btn nav" to={`/iwo/m/${next.id}`}>
             {next.title} →
           </Link>
         </div>
