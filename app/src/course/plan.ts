@@ -1,3 +1,4 @@
+import { plural } from '../components/ui.tsx'
 import { problems } from '../data/problems.ts'
 import type { State } from '../lib/store.ts'
 import { coderunForModule, coderunLevel, contestProblems, diagnostic, moduleLessons, yandexPicks } from './content.ts'
@@ -57,7 +58,7 @@ function moduleTasks(moduleId: string, mastery: Mastery, used: Set<string>, answ
       id: `lesson:${l.id}`,
       kind: 'lesson',
       title: l.title,
-      detail: mastery === 0 ? `Теория, ${l.check.length} вопросов самопроверки` : 'Повторить теорию и пройти самопроверку',
+      detail: mastery === 0 ? `Теория и ${plural(l.check.length, "вопрос", "вопроса", "вопросов")} самопроверки` : 'Повторить теорию и пройти самопроверку',
       minutes: Math.max(10, Math.round((l.minutes + l.check.length * 1.5) * lessonFactor)),
       to: `/iwo/l/${l.id}`,
       ref: l.id,
