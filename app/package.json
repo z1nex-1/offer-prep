@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "verify": "node tools/check-data.mjs && node tools/verify-problems.mjs && node tools/verify-sql.mjs > /dev/null && node tools/verify-quiz.mjs",
+    "verify": "node tools/check-data.mjs && node tools/verify-problems.mjs && node tools/verify-sql.mjs > /dev/null && node tools/verify-quiz.mjs && node tools/verify-course.mjs",
     "links": "node tools/links.mjs"
   },
   "dependencies": {
