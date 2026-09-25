@@ -101,7 +101,8 @@ async function runProgram(req: ProgramReq) {
       const res = p.runPython('__run_program(__src, __inp)') as { toJs: () => [string, string | null, number]; destroy: () => void }
       const [out, err, ms] = res.toJs()
       res.destroy()
-      self.postMessage({ progress: i, out: out.length > 200000 ? out.slice(0, 200000) : out, err, ms })
+      // Порог выше любого эталонного вывода (тесты задачи — до 1 МБ) и защищает только от бесконечной печати.
+      self.postMessage({ progress: i, out: out.length > 4000000 ? out.slice(0, 4000000) : out, err, ms })
     }
     self.postMessage({ done: true })
   } catch (err) {

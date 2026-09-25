@@ -64,6 +64,9 @@ for (const f of walk(join(ROOT, 'diag')).filter((f) => f.endsWith('.md'))) {
   }
 }
 
+// Воркер тренажёра обрезает вывод программы; эталон длиннее порога получил бы WA даже у верного решения.
+const outCap = Number(readFileSync(new URL('../src/workers/py.worker.ts', import.meta.url), 'utf8').match(/out\.length > (\d+)/)?.[1] ?? 0)
+const PUB = new URL('../public/contest/', import.meta.url).pathname
 const gen = existsSync(join(ROOT, 'contest.gen.json')) ? JSON.parse(readFileSync(join(ROOT, 'contest.gen.json'), 'utf8')) : {}
 let contestN = 0
 for (const f of walk(join(ROOT, 'contest')).filter((f) => f.endsWith('.md'))) {
@@ -73,6 +76,10 @@ for (const f of walk(join(ROOT, 'contest')).filter((f) => f.endsWith('.md'))) {
     contestN++
     if (!moduleIds.has(p.module)) fail('НЕТ МОДУЛЯ', p.module, rel)
     if (!gen[p.id]) fail('НЕТ ТЕСТОВ — запустите tools/build-contest.py', p.id)
+    else if (existsSync(join(PUB, p.id + '.json'))) {
+      const longest = Math.max(...JSON.parse(readFileSync(join(PUB, p.id + '.json'), 'utf8')).map((t) => t.out.length))
+      if (!outCap || longest > outCap) fail('ВЫВОД ДЛИННЕЕ ПОРОГА ВОРКЕРА', p.id, longest, '>', outCap)
+    }
     if (!p.explanation) fail('НЕТ РАЗБОРА', rel)
     if (/\$[^$\n]+\$/.test(p.statement)) fail('LaTeX не отображается', rel)
   } catch (e) {
