@@ -264,10 +264,10 @@ export const modules: CourseModule[] = [
     id: 'strings',
     title: 'Строки и разбор данных',
     part: 'algo',
-    goal: 'Палиндромы, подстроки, разбор форматов, хеширование строк.',
+    goal: 'Строки в Python и стоимость операций, палиндромы, анаграммы, окна на строках, хеширование, разбор логов, JSON и CSV.',
     stage: 'both',
     weight: 2,
-    problems: [],
+    problems: ['valid-palindrome', 'rle', 'group-anagrams', 'min-window'],
     coderunTags: ['strings', 'string matching', 'parsing', 'json'],
   },
   {
