@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { Crumbs, Md } from '../../components/ui'
+import { Crumbs, Md, plural } from '../../components/ui'
 import { contestProblems, lessonById, lessons, moduleLessons } from '../../course/content'
 import { moduleById } from '../../course/modules'
 import { QuizBlock } from '../../course/ui'
@@ -33,7 +33,7 @@ export default function LessonPage() {
       <h1>{l.title}</h1>
       <div className="row mb">
         <span className="chip">≈ {l.minutes} мин</span>
-        {l.check.length > 0 && <span className="chip">{l.check.length} вопросов самопроверки</span>}
+        {l.check.length > 0 && <span className="chip">{plural(l.check.length, 'вопрос', 'вопроса', 'вопросов')} самопроверки</span>}
         {done && <span className="chip easy">✓ Пройден</span>}
       </div>
       <p className="muted" style={{ fontSize: 17 }}>
@@ -86,12 +86,12 @@ export default function LessonPage() {
         </button>
         <div className="row">
           {prev && (
-            <Link className="btn" to={`/iwo/l/${prev.id}`}>
+            <Link className="btn nav" to={`/iwo/l/${prev.id}`}>
               ← {prev.title}
             </Link>
           )}
           {next && (
-            <Link className="btn" to={`/iwo/l/${next.id}`}>
+            <Link className="btn nav" to={`/iwo/l/${next.id}`}>
               {next.title} →
             </Link>
           )}

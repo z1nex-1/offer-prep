@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Crumbs, Md, Progress } from '../../components/ui'
+import { Crumbs, Md, Progress, plural } from '../../components/ui'
 import { diagnostic } from '../../course/content'
 import { modules, moduleById } from '../../course/modules'
 import { diagScores, masteryFromScore } from '../../course/progress'
@@ -141,7 +141,7 @@ export default function Diagnostic() {
         <Crumbs items={[{ to: '/iwo', label: 'Курс IWO' }, { label: 'Диагностика' }]} />
         <h1>Диагностика уровня</h1>
         <p className="lead">
-          {diagnostic.length} вопросов по {perModule.length} темам — от основ Python до графов и теории бэкенда. Вопросы внутри темы идут от простых к сложным.
+          {plural(diagnostic.length, 'вопрос', 'вопроса', 'вопросов')} по {plural(perModule.length, 'теме', 'темам', 'темам')} — от основ Python до графов и теории бэкенда. Вопросы внутри темы идут от простых к сложным.
         </p>
         <div className="card stack">
           <div>

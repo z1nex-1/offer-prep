@@ -136,7 +136,7 @@ export default function ContestProblemPage({ virtual, pid }: { virtual?: boolean
           <div className="row mt-s">
             <DiffChip d={p.difficulty} />
             <span className="chip">{moduleById[p.module]?.title}</span>
-            <span className="chip">Ограничение времени: 1 с на тест (в Яндекс Контесте)</span>
+            <span className="chip wrap">Ограничение времени: 1 с на тест (в Яндекс Контесте)</span>
           </div>
           {!virtual && (
             <div className="tabs mt">

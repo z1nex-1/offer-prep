@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Crumbs, Check } from '../../components/ui'
+import { Crumbs, Check, plural } from '../../components/ui'
 import { SELECTIONS, coderun, coderunLevel, coderunUrl } from '../../course/content'
 import { modules } from '../../course/modules'
 import { toggleIn, useStore } from '../../lib/store'
@@ -35,7 +35,7 @@ export default function YandexBank() {
       <Crumbs items={[{ to: '/iwo', label: 'Курс IWO' }, { label: 'Задачи Яндекса' }]} />
       <h1>Задачи Яндекса по темам курса</h1>
       <p className="lead" style={{ maxWidth: 860 }}>
-        {coderun.length} задач с CodeRun — тренажёра Яндекса, где собраны задачи прошлых отборов, тренировок по алгоритмам и собеседований. Все решаются на Python. Отмечено решённых: {doneN}.
+        {plural(coderun.length, 'задача', 'задачи', 'задач')} с CodeRun — тренажёра Яндекса, где собраны задачи прошлых отборов, тренировок по алгоритмам и собеседований. Все решаются на Python. Отмечено решённых: {doneN}.
       </p>
       <div className="notice mb">
         Как пользоваться: решайте задачу на CodeRun до вердикта OK, затем ставьте галочку здесь — прогресс попадёт в план. Для репетиции контеста лучше всего подходят подборка «Бэкенд, сезон CodeRun» (задачи трека бэкенда) и «Стажировка // Бэкенд» от интервьюеров Яндекса.

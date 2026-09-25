@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Crumbs, Md } from '../../components/ui'
+import { Crumbs, Md, plural } from '../../components/ui'
 import { lessons } from '../../course/content'
 import { modules } from '../../course/modules'
 import { problems } from '../../data/problems'
@@ -71,9 +71,8 @@ export default function Interview() {
       <section className="section">
         <h2>Алгоритм на каждую задачу</h2>
         <div className="steps">
-          {STEPS.map(([t, d], i) => (
+          {STEPS.map(([t, d]) => (
             <div key={t} className="step">
-              <span className="n">{i + 1}</span>
               <div className="step-body">
                 <b>{t}</b>
                 <div className="small muted">{d}</div>
@@ -138,7 +137,7 @@ function TheoryDrill() {
   return (
     <section className="section">
       <h2>Случайный вопрос по теории</h2>
-      <p className="small muted">{pool.length} вопросов из уроков о Python, сложности, коллекциях, сетях и базах данных. Отвечайте вслух за 1–2 минуты, как на секции.</p>
+      <p className="small muted">{plural(pool.length, 'вопрос', 'вопроса', 'вопросов')} из уроков о Python, сложности, коллекциях, сетях и базах данных. Отвечайте вслух за 1–2 минуты, как на секции.</p>
       <div className="card stack">
         <div className="tiny faint">
           Урок: <Link to={`/iwo/l/${q.lesson.id}`}>{q.lesson.title}</Link>

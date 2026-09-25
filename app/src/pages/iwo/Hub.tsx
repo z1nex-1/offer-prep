@@ -54,7 +54,7 @@ export default function Hub() {
         <div className="card section" style={{ borderColor: 'var(--accent)' }}>
           <h2 style={{ marginTop: 0 }}>Шаг 1. Определить уровень</h2>
           <p className="muted">
-            Тест из {diagnostic.length} вопросов по всем темам курса: Python, алгоритмы, теория. Отвечайте честно, кнопка «Не знаю» лучше угадывания — по результатам курс покажет, какие темы учить с нуля, какие повторить, а какие пропустить. Если по теме подряд идут ошибки, тест сам перейдёт к следующей. Занимает 25–40 минут.
+            Тест из {plural(diagnostic.length, 'вопроса', 'вопросов', 'вопросов')} по всем темам курса: Python, алгоритмы, теория. Отвечайте честно, кнопка «Не знаю» лучше угадывания — по результатам курс покажет, какие темы учить с нуля, какие повторить, а какие пропустить. Если по теме подряд идут ошибки, тест сам перейдёт к следующей. Занимает 25–40 минут.
           </p>
           <div className="row">
             <Link className="btn primary" to="/iwo/diagnostic">
@@ -102,7 +102,7 @@ export default function Hub() {
         <div className="grid grid-4">
           <Link to="/iwo/diagnostic" className="card card-link">
             <b>Диагностика</b>
-            <div className="small muted">{s.iwo.diag ? `Пройдена ${new Date(s.iwo.diag.at).toLocaleDateString('ru-RU')} · пройти снова` : `${diagnostic.length} вопросов, 25–40 минут`}</div>
+            <div className="small muted">{s.iwo.diag ? `Пройдена ${new Date(s.iwo.diag.at).toLocaleDateString('ru-RU')} · пройти снова` : `${plural(diagnostic.length, 'вопрос', 'вопроса', 'вопросов')}, 25–40 минут`}</div>
           </Link>
           <Link to="/iwo/contest" className="card card-link">
             <b>Задачи в формате контеста</b>
@@ -113,7 +113,7 @@ export default function Hub() {
           <Link to="/iwo/yandex" className="card card-link">
             <b>Задачи Яндекса</b>
             <div className="small muted">
-              {coderun.length} задач CodeRun по темам курса · отмечено {solvedCr}
+              {plural(coderun.length, 'задача', 'задачи', 'задач')} CodeRun по темам курса · отмечено {solvedCr}
             </div>
           </Link>
           <Link to="/iwo/interview" className="card card-link">
@@ -127,7 +127,7 @@ export default function Hub() {
         <div className="section-head">
           <h2>Программа</h2>
           <span className="small muted">
-            {doneLessons} из {lessons.length} уроков пройдено
+            {doneLessons} из {plural(lessons.length, 'урока', 'уроков', 'уроков')} пройдено
           </span>
         </div>
         {PARTS.map((part) => {
