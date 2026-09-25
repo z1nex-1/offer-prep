@@ -541,6 +541,7 @@ button.chip {
   height: auto;
   min-height: 26px;
   padding-block: 3px;
+  border-radius: 10px;
 }
 .chip.on {
   background: var(--accent-soft);
